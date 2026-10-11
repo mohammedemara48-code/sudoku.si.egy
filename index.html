@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>سودوكو برو</title>
+<style>
+:root {
+  --bg: #0f1419;
+  --card: #1a2332;
+  --card-hover: #243044;
+  --line: #2d3a50;
+  --thick: #7c9ac0;
+  --cell: #1e2a3e;
+  --sel: #2c4a7a;
+  --same: #243652;
+  --err: #ff6b6b;
+  --given: #f0f4ff;
+  --user: #7eb6ff;
+  --acc: #4f8cff;
+  --acc-hover: #3b7aef;
+  --text: #e8edf8;
+  --text-muted: #8b9bb8;
+  --notes: #9fb0d6;
+  --win: #4ade80;
+  --gold: #fbbf24;
+  --silver: #e5e7eb;
+  --bronze: #d97706;
+  --shadow: 0 8px 32px rgba(0,0,0,.35);
+  --radius: 14px;
+}
+[data-theme="light"] {
+  --bg: #f4f6fb;
+  --card: #ffffff;
+  --card-hover: #f0f4ff;
+  --line: #e2e8f0;
+  --thick: #64748b;
+  --cell: #ffffff;
+  --sel: #dbeafe;
+  --same: #eff6ff;
+  --err: #ef4444;
+  --given: #1e293b;
+  --user: #2563eb;
+  --acc: #3b82f6;
+  --acc-hover: #2563eb;
+  --text: #1e293b;
+  --text-muted: #64748b;
+  --notes: #64748b;
+  --win: #16a34a;
+  --shadow: 0 8px 32px rgba(15,23,42,.08);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+  display: flex;
+  justify-content: center;
+  padding: 16px 12px 40px;
+  transition: background .25s, color .25s;
+  min-height: 100vh;
+}
+.app {
+  width: 100%;
+  max-width: 460px;
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  gap: 10px;
+}
+h1 {
+  margin: 0;
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: -.5px;
+}
+.header-right { display: flex; gap: 8px; align-items: center; }
+.user-info {
+  font-size: 13px;
+  color: var(--text-muted);
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+button, select {
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all .15s;
+  font-family: inherit;
+}
+button:hover, select:hover { background: var(--card-hover); }
+button.primary {
+  background: var(--acc);
+  border-color: var(--acc);
+  color: #fff;
+  font-weight: 600;
+}
+button.primary:hover { background: var(--acc-hover); }
+button.on { background: var(--sel); border-color: var(--acc); }
+.tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+  background: var(--card);
+  padding: 4px;
+  border-radius: 12px;
+}
+.tabs button {
+  flex: 1;
+  border: none;
+  background: transparent;
+  border-radius: 9px;
+  padding: 9px 0;
+  font-weight: 600;
+}
+.tabs button.active {
+  background: var(--acc);
+  color: #fff;
+}
+.banner {
+  background: linear-gradient(90deg, #4f8cff, #7c3aed);
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 12px;
+  text-align: center;
+  margin-bottom: 14px;
+  font-weight: 700;
+  font-size: 14.5px;
+  box-shadow: var(--shadow);
+  animation: slideIn .4s ease;
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.bar {
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+#timer, #compTimer {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 15px;
+  background: var(--card);
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+}
+#board, #compBoard {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  border: 3px solid var(--thick);
+  border-radius: 10px;
+  overflow: hidden;
+  direction: ltr;
+  aspect-ratio: 1;
+  box-shadow: var(--shadow);
+  background: var(--thick);
+}
+.c {
+  position: relative;
+  background: var(--cell);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(17px, 5.8vw, 28px);
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  transition: background .12s;
+}
+.c:nth-child(9n+3), .c:nth-child(9n+6) { border-right: 3px solid var(--thick); }
+.c:nth-child(n+19):nth-child(-n+27), .c:nth-child(n+46):nth-child(-n+54) { border-bottom: 3px solid var(--thick); }
+.c.given { color: var(--given); font-weight: 800; }
+.c.user { color: var(--user); }
+.c.same { background: var(--same); }
+.c.sel { background: var(--sel); }
+.c.err { color: var(--err); }
+.notes {
+  position: absolute;
+  inset: 2px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  font-size: clamp(6.5px, 2.1vw, 9.5px);
+  color: var(--notes);
+  line-height: 1;
+  font-weight: 500;
+}
+.notes span { display: flex; align-items: center; justify-content: center; }
+.pad {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 6px;
+  margin-top: 12px;
+}
+.pad button {
+  padding: 11px 0;
+  font-size: 18px;
+  font-weight: 600;
+  border-radius: 10px;
+}
+.tools {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.tools button { padding: 7px 10px; font-size: 13px; border-radius: 9px; }
+#msg, #compMsg {
+  text-align: center;
+  margin-top: 12px;
+  min-height: 24px;
+  font-weight: 700;
+  font-size: 15px;
+}
+.win { color: var(--win); }
+.rank-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+  background: var(--card);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.rank-table th, .rank-table td {
+  border-bottom: 1px solid var(--line);
+  padding: 10px 8px;
+  text-align: center;
+}
+.rank-table th {
+  background: var(--card-hover);
+  font-weight: 700;
+  font-size: 13.5px;
+}
+.rank-table tr:last-child td { border-bottom: none; }
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 800;
+  margin-left: 4px;
+}
+.badge.gold { background: var(--gold); color: #78350f; }
+.badge.silver { background: var(--silver); color: #374151; }
+.badge.bronze { background: var(--bronze); color: #fff; }
+.badge.other { background: var(--line); color: var(--text); }
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  backdrop-filter: blur(4px);
+}
+.modal-content {
+  background: var(--card);
+  padding: 24px;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 340px;
+  box-shadow: var(--shadow);
+}
+.modal-content h3 { margin: 0 0 14px; text-align: center; }
+.modal-content input {
+  width: 100%;
+  padding: 10px 12px;
+  margin: 6px 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+}
+.modal-content button { width: 100%; margin-top: 8px; padding: 10px; }
+.hidden { display: none !important; }
+@media (max-width: 400px) {
+  .app { padding: 0 4px; }
+  h1 { font-size: 1.35rem; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>🧩 سودوكو برو</h1>
+    <div class="header-right">
+      <span id="userInfo" class="user-info"></span>
+      <button id="themeBtn" title="تبديل الوضع">🌙</button>
+      <button id="authBtn">دخول</button>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="active" data-tab="game">لعبة</button>
+    <button data-tab="comp">مسابقة</button>
+    <button data-tab="rank">الترتيب</button>
+  </div>
+
+  <div id="dailyBest" class="banner hidden"></div>
+
+  <div id="gameTab">
+    <div class="bar">
+      <select id="level">
+        <option value="36">سهل</option>
+        <option value="30" selected>متوسط</option>
+        <option value="26">صعب</option>
+        <option value="23">خبير</option>
+      </select>
+      <button class="primary" id="newBtn">لغز جديد</button>
+      <span id="timer">00:00</span>
+    </div>
+    <div id="board"></div>
+    <div class="pad" id="pad"></div>
+    <div class="tools">
+      <button id="notesBtn">✏️ ملاحظات</button>
+      <button id="eraseBtn">🧽 مسح</button>
+      <button id="hintBtn">💡 تلميح</button>
+      <button id="checkBtn">✔️ تحقق</button>
+    </div>
+    <div id="msg"></div>
+  </div>
+
+  <div id="compTab" class="hidden">
+    <div class="bar">
+      <span style="font-weight:600">مسابقة اليوم</span>
+      <button class="primary" id="compNew">ابدأ / استمر</button>
+      <span id="compTimer">00:00</span>
+    </div>
+    <div id="compBoard"></div>
+    <div class="pad" id="compPad"></div>
+    <div class="tools">
+      <button id="compNotesBtn">✏️ ملاحظات</button>
+      <button id="compEraseBtn">🧽 مسح</button>
+      <button id="compHintBtn">💡 تلميح</button>
+      <button id="compCheckBtn">✔️ تحقق</button>
+    </div>
+    <div id="compMsg"></div>
+  </div>
+
+  <div id="rankTab" class="hidden">
+    <h3 style="text-align:center;margin:4px 0 12px;font-size:1.15rem">ترتيب الأعضاء</h3>
+    <table class="rank-table">
+      <thead><tr><th>#</th><th>الاسم</th><th>النقاط</th></tr></thead>
+      <tbody id="rankBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="authModal" class="modal hidden">
+  <div class="modal-content">
+    <h3 id="authTitle">تسجيل الدخول</h3>
+    <input id="email" type="email" placeholder="البريد الإلكتروني" autocomplete="email">
+    <input id="password" type="password" placeholder="كلمة المرور" autocomplete="current-password">
+    <button class="primary" id="doAuth">دخول</button>
+    <button id="switchAuth">إنشاء حساب</button>
+    <button id="closeAuth">إلغاء</button>
+  </div>
+</div>
+
+
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+
+// Theme
+let theme = localStorage.getItem('theme') || 'dark';
+function applyTheme() {
+  document.documentElement.setAttribute('data-theme', theme);
+  $('#themeBtn').textContent = theme === 'dark' ? '🌙' : '☀️';
+}
+applyTheme();
+$('#themeBtn').onclick = () => {
+  theme = theme === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('theme', theme);
+  applyTheme();
+};
+
+// Server API helpers
+async function api(path, body) {
+  const res = await fetch(path, {
+    method: body ? 'POST' : 'GET',
+    headers: { 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  return res.json();
+}
+
+// Auth (server + local session)
+let currentUser = JSON.parse(localStorage.getItem('session') || 'null');
+async function updateUserUI() {
+  if (currentUser) {
+    $('#userInfo').textContent = `${currentUser.name} · ${currentUser.points || 0} نقطة`;
+    $('#authBtn').textContent = 'خروج';
+  } else {
+    $('#userInfo').textContent = '';
+    $('#authBtn').textContent = 'دخول';
+  }
+  await renderRank();
+  await updateBanner();
+}
+updateUserUI();
+
+let isRegister = false;
+$('#authBtn').onclick = () => {
+  if (currentUser) {
+    currentUser = null;
+    localStorage.removeItem('session');
+    updateUserUI();
+    return;
+  }
+  isRegister = false;
+  $('#authTitle').textContent = 'تسجيل الدخول';
+  $('#doAuth').textContent = 'دخول';
+  $('#switchAuth').textContent = 'إنشاء حساب';
+  $('#authModal').classList.remove('hidden');
+};
+$('#switchAuth').onclick = () => {
+  isRegister = !isRegister;
+  $('#authTitle').textContent = isRegister ? 'إنشاء حساب' : 'تسجيل الدخول';
+  $('#doAuth').textContent = isRegister ? 'تسجيل' : 'دخول';
+  $('#switchAuth').textContent = isRegister ? 'لدي حساب' : 'إنشاء حساب';
+};
+$('#closeAuth').onclick = () => $('#authModal').classList.add('hidden');
+$('#doAuth').onclick = async () => {
+  const email = $('#email').value.trim().toLowerCase();
+  const pass = $('#password').value;
+  if (!email || !pass) return alert('أدخل البريد وكلمة المرور');
+  const action = isRegister ? 'register' : 'login';
+  const r = await api('/api/auth', { action, email, password: pass });
+  if (r.error) return alert(r.error);
+  currentUser = r.user;
+  localStorage.setItem('session', JSON.stringify(currentUser));
+  $('#authModal').classList.add('hidden');
+  $('#email').value = '';
+  $('#password').value = '';
+  updateUserUI();
+};
+
+async function addPoints(pts) {
+  if (!currentUser) return;
+  const r = await api('/api/auth', { action: 'addPoints', email: currentUser.email, points: pts });
+  if (r.ok) {
+    currentUser.points = r.points;
+    localStorage.setItem('session', JSON.stringify(currentUser));
+    updateUserUI();
+  }
+}
+
+async function renderRank() {
+  const r = await api('/api/rank');
+  const arr = r.rank || [];
+  const tb = $('#rankBody');
+  tb.innerHTML = '';
+  arr.forEach((u, i) => {
+    const tr = document.createElement('tr');
+    let badge = '';
+    if (i === 0) badge = '<span class="badge gold">1</span>';
+    else if (i === 1) badge = '<span class="badge silver">2</span>';
+    else if (i === 2) badge = '<span class="badge bronze">3</span>';
+    else if (i < 5) badge = `<span class="badge other">${i + 1}</span>`;
+    tr.innerHTML = `<td>${badge || (i + 1)}</td><td>${u.name}</td><td>${u.points}</td>`;
+    if (currentUser && u.email === currentUser.email) tr.style.background = 'var(--sel)';
+    tb.appendChild(tr);
+  });
+  if (!arr.length) tb.innerHTML = '<tr><td colspan="3" style="padding:20px;color:var(--text-muted)">لا يوجد أعضاء بعد</td></tr>';
+}
+
+async function updateBanner() {
+  const r = await api('/api/comp');
+  const banner = $('#dailyBest');
+  if (r.best) {
+    banner.textContent = `🏆 بطل اليوم: ${r.best.name} — وقت ${r.best.time}`;
+    banner.classList.remove('hidden');
+  } else {
+    banner.classList.add('hidden');
+  }
+}
+
+// Tabs
+$$('.tabs button').forEach(b => b.onclick = () => {
+  $$('.tabs button').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  const tab = b.dataset.tab;
+  $('#gameTab').classList.toggle('hidden', tab !== 'game');
+  $('#compTab').classList.toggle('hidden', tab !== 'comp');
+  $('#rankTab').classList.toggle('hidden', tab !== 'rank');
+  if (tab === 'rank') renderRank();
+  if (tab === 'comp') loadComp();
+});
+
+// Core Sudoku (same as before)
+function shuffle(a, rng = Math.random) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function ok(g, i, v) {
+  const r = Math.floor(i / 9), c = i % 9;
+  for (let k = 0; k < 9; k++) if (g[r * 9 + k] === v || g[k * 9 + c] === v) return false;
+  const br = r - r % 3, bc = c - c % 3;
+  for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) if (g[(br + a) * 9 + bc + b] === v) return false;
+  return true;
+}
+function fill(g, rng = Math.random) {
+  const i = g.indexOf(0);
+  if (i < 0) return true;
+  for (const v of shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9], rng)) {
+    if (ok(g, i, v)) {
+      g[i] = v;
+      if (fill(g, rng)) return true;
+      g[i] = 0;
+    }
+  }
+  return false;
+}
+function countSol(g, limit = 2) {
+  let n = 0;
+  (function go() {
+    if (n >= limit) return;
+    let best = -1, bc = null;
+    for (let i = 0; i < 81; i++) if (!g[i]) {
+      const c = [];
+      for (let v = 1; v <= 9; v++) if (ok(g, i, v)) c.push(v);
+      if (!c.length) return;
+      if (!bc || c.length < bc.length) { bc = c; best = i; if (c.length === 1) break; }
+    }
+    if (best < 0) { n++; return; }
+    for (const v of bc) {
+      g[best] = v; go(); g[best] = 0;
+      if (n >= limit) return;
+    }
+  })();
+  return n;
+}
+function generate(clues, rng = Math.random) {
+  const full = Array(81).fill(0);
+  fill(full, rng);
+  const p = full.slice();
+  for (const i of shuffle([...Array(81).keys()], rng)) {
+    if (p.filter(x => x).length <= clues) break;
+    const b = p[i];
+    p[i] = 0;
+    if (countSol(p.slice()) !== 1) p[i] = b;
+  }
+  return { full, p };
+}
+function makeRng(seed) {
+  let s = seed % 2147483647;
+  if (s <= 0) s += 2147483646;
+  return () => { s = s * 16807 % 2147483647; return (s - 1) / 2147483646; };
+}
+function getDaySeed() {
+  const d = new Date();
+  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+}
+
+let solution, puzzle, grid, notes, given, sel = -1, notesMode = false, startT, timerId, done = false;
+let isComp = false;
+
+function conflicts(i) {
+  const v = grid[i]; if (!v) return false;
+  const r = Math.floor(i / 9), c = i % 9;
+  for (let k = 0; k < 9; k++) {
+    if (k !== c && grid[r * 9 + k] === v) return true;
+    if (k !== r && grid[k * 9 + c] === v) return true;
+  }
+  const br = r - r % 3, bc = c - c % 3;
+  for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) {
+    const j = (br + a) * 9 + bc + b;
+    if (j !== i && grid[j] === v) return true;
+  }
+  return false;
+}
+
+function render(boardId = '#board') {
+  const b = $(boardId); b.innerHTML = '';
+  for (let i = 0; i < 81; i++) {
+    const d = document.createElement('div'); d.className = 'c';
+    if (given[i]) d.classList.add('given');
+    else if (grid[i]) d.classList.add('user');
+    if (i === sel) d.classList.add('sel');
+    else if (sel >= 0 && grid[sel] && grid[i] === grid[sel]) d.classList.add('same');
+    if (grid[i] && !given[i] && conflicts(i)) d.classList.add('err');
+    if (grid[i]) d.textContent = grid[i];
+    else if (notes[i].size) {
+      const n = document.createElement('div'); n.className = 'notes';
+      for (let v = 1; v <= 9; v++) {
+        const s = document.createElement('span');
+        s.textContent = notes[i].has(v) ? v : '';
+        n.appendChild(s);
+      }
+      d.appendChild(n);
+    }
+    d.onclick = () => { sel = i; render(boardId); };
+    b.appendChild(d);
+  }
+}
+
+function place(v) {
+  if (done || sel < 0 || given[sel]) return;
+  if (notesMode) {
+    if (grid[sel]) return;
+    notes[sel].has(v) ? notes[sel].delete(v) : notes[sel].add(v);
+  } else {
+    grid[sel] = (grid[sel] === v) ? 0 : v;
+    notes[sel].clear();
+    if (grid[sel]) {
+      const r = Math.floor(sel / 9), c = sel % 9;
+      for (let k = 0; k < 9; k++) {
+        notes[r * 9 + k].delete(v);
+        notes[k * 9 + c].delete(v);
+      }
+      const br = r - r % 3, bc = c - c % 3;
+      for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) notes[(br + a) * 9 + bc + b].delete(v);
+    }
+  }
+  render(isComp ? '#compBoard' : '#board');
+  checkWin();
+}
+
+function checkWin() {
+  if (grid.every((v, i) => v === solution[i])) {
+    done = true; clearInterval(timerId);
+    const timeStr = isComp ? $('#compTimer').textContent : $('#timer').textContent;
+    const msgEl = isComp ? $('#compMsg') : $('#msg');
+    msgEl.textContent = '🎉 مبروك! خلصت في ' + timeStr;
+    msgEl.className = 'win';
+    let pts = isComp ? 500 : 80;
+    if (!isComp) {
+      const level = +$('#level').value;
+      if (level <= 23) pts = 200;
+      else if (level <= 26) pts = 150;
+      else if (level <= 30) pts = 100;
+    }
+    addPoints(pts);
+    if (isComp && currentUser) {
+      const timeSec = Math.floor((Date.now() - startT) / 1000);
+      api('/api/comp', { name: currentUser.name, time: timeStr, sec: timeSec, email: currentUser.email })
+        .then(() => updateBanner());
+    }
+  }
+}
+
+function tick() {
+  const s = Math.floor((Date.now() - startT) / 1000);
+  const txt = String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+  (isComp ? $('#compTimer') : $('#timer')).textContent = txt;
+}
+
+function newGame(clues, comp = false) {
+  isComp = comp;
+  const msgEl = comp ? $('#compMsg') : $('#msg');
+  msgEl.textContent = 'جاري التوليد...';
+  setTimeout(() => {
+    const rng = comp ? makeRng(getDaySeed()) : Math.random;
+    const { full, p } = generate(clues, rng);
+    solution = full; puzzle = p; grid = p.slice();
+    notes = Array.from({ length: 81 }, () => new Set());
+    given = p.map(x => x !== 0);
+    sel = -1; done = false;
+    startT = Date.now();
+    clearInterval(timerId);
+    timerId = setInterval(tick, 1000); tick();
+    msgEl.textContent = ''; msgEl.className = '';
+    render(comp ? '#compBoard' : '#board');
+  }, 30);
+}
+
+function loadComp() {}
+
+function makePad(id) {
+  const pad = $(id);
+  for (let v = 1; v <= 9; v++) {
+    const b = document.createElement('button');
+    b.textContent = v;
+    b.onclick = () => place(v);
+    pad.appendChild(b);
+  }
+}
+makePad('#pad');
+makePad('#compPad');
+
+$('#newBtn').onclick = () => newGame(+$('#level').value, false);
+$('#compNew').onclick = () => newGame(23, true);
+
+$('#notesBtn').onclick = e => {
+  notesMode = !notesMode;
+  e.target.classList.toggle('on', notesMode);
+  e.target.textContent = notesMode ? '✏️ ملاحظات: تشغيل' : '✏️ ملاحظات';
+};
+$('#compNotesBtn').onclick = e => { notesMode = !notesMode; e.target.classList.toggle('on', notesMode); };
+$('#eraseBtn').onclick = () => {
+  if (sel >= 0 && !given[sel] && !done) {
+    grid[sel] = 0; notes[sel].clear();
+    render(isComp ? '#compBoard' : '#board');
+  }
+};
+$('#compEraseBtn').onclick = $('#eraseBtn').onclick;
+$('#hintBtn').onclick = () => {
+  if (done) return;
+  let i = (sel >= 0 && !given[sel] && grid[sel] !== solution[sel]) ? sel : -1;
+  if (i < 0) {
+    const c = [];
+    for (let k = 0; k < 81; k++) if (grid[k] !== solution[k]) c.push(k);
+    if (!c.length) return;
+    i = c[Math.floor(Math.random() * c.length)];
+  }
+  sel = i; grid[i] = solution[i]; given[i] = true; notes[i].clear();
+  render(isComp ? '#compBoard' : '#board');
+  checkWin();
+};
+$('#compHintBtn').onclick = $('#hintBtn').onclick;
+$('#checkBtn').onclick = () => {
+  const bad = grid.some((v, i) => v && !given[i] && v !== solution[i]);
+  const msgEl = isComp ? $('#compMsg') : $('#msg');
+  msgEl.className = bad ? '' : 'win';
+  msgEl.textContent = bad ? '❌ فيه أرقام غلط' : '✅ كل الأرقام صحيحة حتى الآن';
+};
+$('#compCheckBtn').onclick = $('#checkBtn').onclick;
+
+document.addEventListener('keydown', e => {
+  if (e.key >= '1' && e.key <= '9') place(+e.key);
+  else if (e.key === 'Backspace' || e.key === 'Delete' || e.key === '0') {
+    if (isComp) $('#compEraseBtn').click(); else $('#eraseBtn').click();
+  } else if (sel >= 0) {
+    const r = Math.floor(sel / 9), c = sel % 9;
+    if (e.key === 'ArrowLeft') sel = r * 9 + Math.max(0, c - 1);
+    if (e.key === 'ArrowRight') sel = r * 9 + Math.min(8, c + 1);
+    if (e.key === 'ArrowUp') sel = Math.max(0, r - 1) * 9 + c;
+    if (e.key === 'ArrowDown') sel = Math.min(8, r + 1) * 9 + c;
+    render(isComp ? '#compBoard' : '#board');
+  }
+});
+
+newGame(30, false);
+</script>
+</body>
+</html>
