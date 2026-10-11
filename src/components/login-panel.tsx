@@ -1,6 +1,14 @@
 import { useState, type FormEvent } from "react";
 import { GROK_PROVIDERS, authClient, signIn } from "@/lib/auth/client";
 
+function explainAuthError(message?: string) {
+  const text = message ?? "";
+  if (/invalid origin/i.test(text)) return "العنوان غير مسموح. افتح الموقع من sudokusiegy.vercel.app ثم أعد المحاولة.";
+  if (/exist|already/i.test(text)) return "هذا البريد مسجّل. ادخل بدل إنشاء حساب.";
+  if (/password/i.test(text)) return "كلمة السر قصيرة. استخدم ٨ أحرف على الأقل.";
+  return "تعذر الدخول. راجع البريد وكلمة السر ثم أعد المحاولة.";
+}
+
 export function LoginPanel() {
   const [mode, setMode] = useState<"in" | "up">("in");
   const [name, setName] = useState("");
@@ -23,7 +31,7 @@ export function LoginPanel() {
             callbackURL: "/",
           });
     setPending(false);
-    if (result.error) setError(result.error.message || "تعذر الدخول");
+    if (result.error) setError(explainAuthError(result.error.message));
   }
 
   return (
