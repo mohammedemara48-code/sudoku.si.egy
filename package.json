@@ -1,5 +1,5 @@
 {
-  "name": "app-builder-workspace",
+  "name": "sudoku.si.egy",
   "private": true,
   "sideEffects": false,
   "type": "module",
